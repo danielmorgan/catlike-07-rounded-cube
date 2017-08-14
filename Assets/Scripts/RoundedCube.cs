@@ -6,11 +6,14 @@ using UnityEngine;
 public class RoundedCube : MonoBehaviour {
 
     public int xSize, ySize, zSize;
+
     public int roundness;
 
     private Vector3[] vertices;
 
     private Mesh mesh;
+
+    private Vector3[] normals;
 
     private void Awake () {
         Generate();
@@ -33,22 +36,23 @@ public class RoundedCube : MonoBehaviour {
                                (ySize - 1) * (zSize - 1)
                            ) * 2;
         vertices = new Vector3[cornerVertices + edgeVertices + faceVertices];
+        normals = new Vector3[vertices.Length];
 
         int v = 0;
         // one layer at a time
         for (int y = 0; y <= ySize; y++) {
             // outer faces and edges
             for (int x = 0; x <= xSize; x++) {
-                vertices[v++] = new Vector3(x, y, 0);
+                SetVertex(v++, x, y, 0);
             }
             for (int z = 1; z <= zSize; z++) {
-                vertices[v++] = new Vector3(xSize, y, z);
+                SetVertex(v++, xSize, y, z);
             }
             for (int x = xSize - 1; x >= 0; x--) {
-                vertices[v++] = new Vector3(x, y, zSize);
+                SetVertex(v++, x, y, zSize);
             }
             for (int z = zSize - 1; z > 0; z--) {
-                vertices[v++] = new Vector3(0, y, z);
+                SetVertex(v++, 0, y, z);
             }
         }
         // top face fill
@@ -65,6 +69,20 @@ public class RoundedCube : MonoBehaviour {
         }
 
         mesh.vertices = vertices;
+        mesh.normals = normals;
+    }
+
+    private void SetVertex (int i, int x, int y, int z) {
+        Vector3 inner = vertices[i] = new Vector3(x, y, z);
+
+        if (x < roundness) {
+            inner.x = roundness;
+        } else if (x > xSize - roundness) {
+            inner.x = xSize - roundness;
+        }
+
+        normals[i] = (vertices[i] - inner).normalized;
+        vertices[i] = inner + normals[i] * roundness;
     }
 
     private void CreateTriangles () {
@@ -165,9 +183,11 @@ public class RoundedCube : MonoBehaviour {
             return;
         }
 
-        Gizmos.color = Color.white;
-        foreach (Vector3 vertice in vertices) {
-            Gizmos.DrawSphere(vertice, 0.1f);
+        for (int i = 0; i < vertices.Length; i++) {
+            Gizmos.color = Color.black;
+            Gizmos.DrawSphere(vertices[i], 0.1f);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawRay(vertices[i], normals[i]);
         }
     }
 
