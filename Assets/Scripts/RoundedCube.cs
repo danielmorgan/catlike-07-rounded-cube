@@ -58,13 +58,13 @@ public class RoundedCube : MonoBehaviour {
         // top face fill
         for (int z = 1; z < zSize; z++) {
             for (int x = 1; x < xSize; x++) {
-                vertices[v++] = new Vector3(x, ySize, z);
+                SetVertex(v++, x, ySize, z);
             }
         }
         // bottom face fill
         for (int z = 1; z < zSize; z++) {
             for (int x = 1; x < xSize; x++) {
-                vertices[v++] = new Vector3(x, 0, z);
+                SetVertex(v++, x, 0, z);
             }
         }
 
@@ -79,6 +79,18 @@ public class RoundedCube : MonoBehaviour {
             inner.x = roundness;
         } else if (x > xSize - roundness) {
             inner.x = xSize - roundness;
+        }
+
+        if (y < roundness) {
+            inner.y = roundness;
+        } else if (y > ySize - roundness) {
+            inner.y = ySize - roundness;
+        }
+
+        if (z < roundness) {
+            inner.z = roundness;
+        } else if (z > zSize - roundness) {
+            inner.z = zSize - roundness;
         }
 
         normals[i] = (vertices[i] - inner).normalized;
