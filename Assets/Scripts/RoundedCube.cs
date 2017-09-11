@@ -15,6 +15,8 @@ public class RoundedCube : MonoBehaviour {
 
     private Vector3[] normals;
 
+    private Color32[] cubeUV;
+
     private void Awake () {
         Generate();
     }
@@ -37,6 +39,7 @@ public class RoundedCube : MonoBehaviour {
                            ) * 2;
         vertices = new Vector3[cornerVertices + edgeVertices + faceVertices];
         normals = new Vector3[vertices.Length];
+        cubeUV = new Color32[vertices.Length];
 
         int v = 0;
         // one layer at a time
@@ -70,6 +73,7 @@ public class RoundedCube : MonoBehaviour {
 
         mesh.vertices = vertices;
         mesh.normals = normals;
+        mesh.colors32 = cubeUV;
     }
 
     private void SetVertex (int i, int x, int y, int z) {
@@ -77,47 +81,62 @@ public class RoundedCube : MonoBehaviour {
 
         if (x < roundness) {
             inner.x = roundness;
-        } else if (x > xSize - roundness) {
+        }
+        else if (x > xSize - roundness) {
             inner.x = xSize - roundness;
         }
 
         if (y < roundness) {
             inner.y = roundness;
-        } else if (y > ySize - roundness) {
+        }
+        else if (y > ySize - roundness) {
             inner.y = ySize - roundness;
         }
 
         if (z < roundness) {
             inner.z = roundness;
-        } else if (z > zSize - roundness) {
+        }
+        else if (z > zSize - roundness) {
             inner.z = zSize - roundness;
         }
 
         normals[i] = (vertices[i] - inner).normalized;
         vertices[i] = inner + normals[i] * roundness;
+        cubeUV[i] = new Color32((byte)x, (byte)y, (byte)z, 0);
     }
 
     private void CreateTriangles () {
-        int quads = (
-                        (xSize * ySize) +
-                        (xSize * zSize) +
-                        (ySize * zSize)
-                    ) * 2;
-        int[] triangles = new int[quads * 6];
+        int[] trianglesZ = new int[(xSize * ySize) * 12];
+        int[] trianglesX = new int[(ySize * zSize) * 12];
+        int[] trianglesY = new int[(xSize * zSize) * 12];
         int ring = (xSize + zSize) * 2;
-        int t = 0;
-        int v = 0;
+        int tZ = 0,
+            tX = 0,
+            tY = 0,
+            v = 0;
 
         for (int y = 0; y < ySize; y++, v++) {
-            for (int q = 0; q < ring - 1; q++, v++) {
-                t = SetQuad(triangles, t, v, v + 1, v + ring, v + ring + 1);
+            for (int q = 0; q < xSize; q++, v++) {
+                tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
             }
-            t = SetQuad(triangles, t, v, v - ring + 1, v + ring, v + 1);
+            for (int q = 0; q < zSize; q++, v++) {
+                tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+            }
+            for (int q = 0; q < xSize; q++, v++) {
+                tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
+            }
+            for (int q = 0; q < zSize - 1; q++, v++) {
+                tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+            }
+            tX = SetQuad(trianglesX, tX, v, v - ring + 1, v + ring, v + 1);
         }
-        t = CreateTopFace(triangles, t, ring);
-        t = CreateBottomFace(triangles, t, ring);
+        tY = CreateTopFace(trianglesY, tY, ring);
+        tY = CreateBottomFace(trianglesY, tY, ring);
 
-        mesh.triangles = triangles;
+        mesh.subMeshCount = 3;
+        mesh.SetTriangles(trianglesZ, 0);
+        mesh.SetTriangles(trianglesX, 1);
+        mesh.SetTriangles(trianglesY, 2);
     }
 
     private int CreateTopFace (int[] triangles, int t, int ring) {
